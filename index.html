@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>幾 A 幾 B 幾位數猜數字雲端開發歷程</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; background: #0f172a; color: #f8fafc; padding: 2rem 1rem; margin: 0; }
+    .container { max-width: 900px; margin: 0 auto; text-align: center; }
+    h1 { color: #10b981; margin-bottom: 0.5rem; }
+    p { color: #94a3b8; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem; margin-top: 2rem; text-align: left; }
+    .card { background: #1e293b; border-radius: 12px; padding: 1.5rem; border: 1px solid #334155; display: flex; flex-direction: column; justify-content: space-between; }
+    .tag { background: rgba(16,185,129,0.1); color: #10b981; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.8rem; font-weight: bold; width: fit-content; margin-bottom: 0.5rem; }
+    .btn { display: inline-block; text-align: center; background: #10b981; color: #000; font-weight: bold; padding: 0.6rem; border-radius: 8px; text-decoration: none; margin-top: 1rem; }
+    .btn:hover { background: #059669; color: #fff; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔢 幾 A 幾 B 雲端遊戲開發歷程</h1>
+    <p>展示從靜態區域檔案演進至 Google Apps Script 雲端個人存檔的完整過程</p>
+    
+    <div class="grid">
+      <div class="card">
+        <div>
+          <div class="tag">v1 基礎版</div>
+          <h3>單局遊戲與除錯模式</h3>
+          <p style="color:#94a3b8; font-size:0.9rem;">具備基本 4 位數驗證與除錯顯示模式。</p>
+        </div>
+        <a href="my-v1/index.html" class="btn">開啟 v1</a>
+      </div>
+
+      <div class="card">
+        <div>
+          <div class="tag">v2 多局版</div>
+          <h3>多局歷程與狀態管理</h3>
+          <p style="color:#94a3b8; font-size:0.9rem;">紀錄進行中、已猜對與未完成狀態。</p>
+        </div>
+        <a href="my-v2/index.html" class="btn">開啟 v2</a>
+      </div>
+
+      <div class="card">
+        <div>
+          <div class="tag">v3 代號版</div>
+          <h3>GAS 代號雲端存檔</h3>
+          <p style="color:#94a3b8; font-size:0.9rem;">透過使用者代號自動同步紀錄至 Google 試算表。</p>
+        </div>
+        <a href="v3/index.html" class="btn">開啟 v3</a>
+      </div>
+
+      <div class="card">
+        <div>
+          <div class="tag">v4 帳號版</div>
+          <h3>Google 帳號個人存檔</h3>
+          <p style="color:#94a3b8; font-size:0.9rem;">USER_ACCESSING 自動於玩家個人雲端硬碟建檔。</p>
+        </div>
+        <a href="v4/index.html" class="btn">開啟 v4</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
