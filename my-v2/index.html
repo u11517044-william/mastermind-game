@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>幾 A 幾 B 猜數字 v2</title>
+<style>
+  :root {
+    --bg: #f1f5f9;
+    --card: #ffffff;
+    --text: #0f172a;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --primary: #4f46e5;
+    --primary-dark: #4338ca;
+    --ok: #16a34a;
+    --ok-bg: #dcfce7;
+    --warn: #b45309;
+    --warn-bg: #fef3c7;
+    --err: #dc2626;
+    --err-bg: #fee2e2;
+    --info-bg: #eef2ff;
+    --shadow: 0 10px 30px rgba(15, 23, 42, .08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b1120;
+      --card: #162033;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --border: #26344d;
+      --primary: #818cf8;
+      --primary-dark: #6366f1;
+      --ok: #4ade80;
+      --ok-bg: #12351f;
+      --warn: #fbbf24;
+      --warn-bg: #3a2c0f;
+      --err: #f87171;
+      --err-bg: #3b1818;
+      --info-bg: #1c2545;
+      --shadow: 0 10px 30px rgba(0, 0, 0, .4);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    display: flex;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+  main { width: 100%; max-width: 560px; display: flex; flex-direction: column; gap: 20px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+    padding: 24px;
+  }
+  header { text-align: center; margin-bottom: 16px; }
+  h1 { margin: 0 0 6px; font-size: 1.7rem; }
+  h2 { margin: 0; font-size: 1.1rem; }
+  .sub { margin: 0; color: var(--muted); font-size: .9rem; line-height: 1.5; }
+
+  .current-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .current-title { display: flex; align-items: center; gap: 10px; font-size: 1.15rem; font-weight: 700; }
+
+  .status {
+    display: inline-block;
+    font-size: .78rem;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .status.playing { background: var(--info-bg); color: var(--primary); }
+  .status.won { background: var(--ok-bg); color: var(--ok); }
+  .status.abandoned { background: var(--warn-bg); color: var(--warn); }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .switch { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; font-size: .95rem; }
+  .switch input { position: absolute; opacity: 0; pointer-events: none; }
+  .track {
+    width: 44px; height: 26px;
+    background: var(--border);
+    border-radius: 999px;
+    position: relative;
+    transition: background .2s;
+    flex: none;
+  }
+  .track::after {
+    content: "";
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,.3);
+    transition: transform .2s;
+  }
+  .switch input:checked + .track { background: var(--primary); }
+  .switch input:checked + .track::after { transform: translateX(18px); }
+  .switch input:focus-visible + .track { outline: 3px solid var(--primary); outline-offset: 2px; }
+
+  .debug-box {
+    background: var(--info-bg);
+    border: 1px dashed var(--primary);
+    border-radius: 12px;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+    font-size: .95rem;
+  }
+  .debug-box[hidden] { display: none; }
+  .debug-box strong {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 1.2rem;
+    letter-spacing: .25em;
+    margin-left: 6px;
+  }
+
+  form { display: flex; gap: 10px; }
+  input[type="text"] {
+    flex: 1;
+    min-width: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 1.5rem;
+    letter-spacing: .3em;
+    text-align: center;
+    padding: 12px;
+    border-radius: 12px;
+    border: 2px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    transition: border-color .15s;
+  }
+  input[type="text"]:focus { outline: none; border-color: var(--primary); }
+  input[type="text"]:disabled { opacity: .5; cursor: not-allowed; }
+  input[type="text"]::placeholder { letter-spacing: .3em; color: var(--muted); opacity: .6; }
+
+  button {
+    font: inherit;
+    font-weight: 600;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: background .15s, transform .05s, opacity .15s;
+  }
+  button:active:not(:disabled) { transform: translateY(1px); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: var(--primary-dark); }
+  .btn-ghost {
+    background: transparent;
+    border: 2px solid var(--border);
+    color: var(--text);
+    padding: 8px 14px;
+  }
+  .btn-ghost:hover { border-color: var(--primary); color: var(--primary); }
+
+  .message {
+    margin-top: 14px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: .95rem;
+    line-height: 1.5;
+  }
+  .message:empty { display: none; }
+  .message.error { background: var(--err-bg); color: var(--err); }
+  .message.ok { background: var(--ok-bg); color: var(--ok); font-weight: 600; }
+  .message.info { background: var(--info-bg); color: var(--text); }
+
+  /* 歷史局數 */
+  .history-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 12px;
+  }
+  .count { color: var(--muted); font-size: .9rem; }
+  #games { display: flex; flex-direction: column; gap: 10px; }
+  details.game {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  details.game[open] { border-color: var(--primary); }
+  details.game > summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  details.game > summary::-webkit-details-marker { display: none; }
+  details.game > summary::before {
+    content: "▸";
+    color: var(--muted);
+    transition: transform .15s;
+  }
+  details.game[open] > summary::before { transform: rotate(90deg); }
+  .g-title { font-weight: 700; }
+  .g-meta { margin-left: auto; color: var(--muted); font-size: .82rem; }
+  .game-body { padding: 0 14px 14px; }
+  .times { color: var(--muted); font-size: .82rem; line-height: 1.7; margin-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+  th, td { padding: 7px 8px; text-align: center; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; font-size: .8rem; }
+  tr:last-child td { border-bottom: none; }
+  td.num {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 1.1rem;
+    letter-spacing: .2em;
+  }
+  td.res { font-weight: 700; font-variant-numeric: tabular-nums; }
+  tr.win td.res { color: var(--ok); }
+  .empty { padding: 12px; text-align: center; color: var(--muted); font-size: .9rem; }
+
+  @media (max-width: 400px) {
+    .card { padding: 16px; }
+    input[type="text"] { font-size: 1.25rem; }
+    button { padding: 12px 14px; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <section class="card">
+    <header>
+      <h1>🔢 幾 A 幾 B 猜數字</h1>
+      <p class="sub">答案是 4 個不重複的數字（0–9，可以 0 開頭）。<br>A＝數字與位置都對；B＝數字對但位置不同。</p>
+    </header>
+
+    <div class="current-head">
+      <div class="current-title">
+        <span id="curLabel">第 1 局</span>
+        <span class="status playing" id="curStatus">進行中</span>
+      </div>
+      <button type="button" class="btn-ghost" id="newGameBtn">🔄 開新局（保留紀錄）</button>
+    </div>
+
+    <div class="toolbar">
+      <label class="switch">
+        <input type="checkbox" id="debugToggle" role="switch">
+        <span class="track" aria-hidden="true"></span>
+        <span>🐞 除錯模式</span>
+      </label>
+      <span class="count" id="curCount">本局 0 次猜測</span>
+    </div>
+
+    <div class="debug-box" id="debugBox" hidden>
+      目前答案：<strong id="debugAnswer"></strong>
+    </div>
+
+    <form id="guessForm" autocomplete="off" novalidate>
+      <input type="text" id="guessInput" inputmode="numeric" placeholder="0123" aria-label="輸入四位不重複數字">
+      <button type="submit" class="btn-primary" id="submitBtn">送出</button>
+    </form>
+
+    <div class="message" id="message" role="status" aria-live="polite"></div>
+  </section>
+
+  <section class="card">
+    <div class="history-head">
+      <h2>📚 歷史局數</h2>
+      <span class="count" id="gamesCount"></span>
+    </div>
+    <div id="games"></div>
+    <p class="sub" style="margin-top:12px">紀錄只保存在目前頁面的記憶體中，重新整理或關閉網頁後會清空。</p>
+  </section>
+</main>
+
+<script>
+(() => {
+  'use strict';
+
+  const $ = (id) => document.getElementById(id);
+  const form = $('guessForm');
+  const input = $('guessInput');
+  const submitBtn = $('submitBtn');
+  const newGameBtn = $('newGameBtn');
+  const debugToggle = $('debugToggle');
+  const debugBox = $('debugBox');
+  const debugAnswer = $('debugAnswer');
+  const message = $('message');
+  const curLabel = $('curLabel');
+  const curStatus = $('curStatus');
+  const curCount = $('curCount');
+  const gamesEl = $('games');
+  const gamesCount = $('gamesCount');
+
+  const STATUS_TEXT = { playing: '進行中', won: '已猜對', abandoned: '未完成' };
+
+  // 資料層：games[] 內每局各自擁有獨立的 guesses[]
+  const games = [];
+  const openIds = new Set(); // 記錄哪些局的摺疊面板是展開的
+  let nextId = 1;
+
+  const current = () => games[games.length - 1];
+
+  function fmtTime(d) {
+    if (!d) return '—';
+    return d.toLocaleTimeString('zh-TW', { hour12: false });
+  }
+
+  function generateAnswer() {
+    const digits = '0123456789'.split('');
+    for (let i = digits.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [digits[i], digits[j]] = [digits[j], digits[i]];
+    }
+    return digits.slice(0, 4).join('');
+  }
+
+  function evaluate(guess, target) {
+    let a = 0, b = 0;
+    for (let i = 0; i < 4; i++) {
+      if (guess[i] === target[i]) a++;
+      else if (target.includes(guess[i])) b++;
+    }
+    return { a, b };
+  }
+
+  function validate(value) {
+    if (value === '') return '請輸入四位數字，不能是空白。';
+    if (!/^\d+$/.test(value)) return '只能輸入數字 0–9，請修正。';
+    if (value.length !== 4) return `需要剛好 4 位數字（目前 ${value.length} 位），請修正。`;
+    if (new Set(value).size !== 4) return '數字不可重複（例如 1123 無效），請修正。';
+    return null;
+  }
+
+  function showMessage(text, type) {
+    message.textContent = text;
+    message.className = 'message' + (type ? ' ' + type : '');
+  }
+
+  function createGame() {
+    const g = {
+      id: nextId++,
+      answer: generateAnswer(),
+      startedAt: new Date(),
+      endedAt: null,
+      status: 'playing',
+      guesses: []
+    };
+    games.push(g);
+    openIds.add(g.id); // 新局預設展開
+    return g;
+  }
+
+  function renderDebug() {
+    const on = debugToggle.checked;
+    debugBox.hidden = !on;
+    // 只顯示「目前這一局」的答案
+    debugAnswer.textContent = on ? current().answer : '';
+  }
+
+  function renderCurrent() {
+    const g = current();
+    curLabel.textContent = `第 ${g.id} 局`;
+    curStatus.textContent = STATUS_TEXT[g.status];
+    curStatus.className = 'status ' + g.status;
+    curCount.textContent = `本局 ${g.guesses.length} 次猜測`;
+    const canPlay = g.status === 'playing';
+    input.disabled = !canPlay;
+    submitBtn.disabled = !canPlay;
+  }
+
+  function buildGameEl(g) {
+    const det = document.createElement('details');
+    det.className = 'game';
+    det.open = openIds.has(g.id);
+    det.addEventListener('toggle', () => {
+      if (det.open) openIds.add(g.id); else openIds.delete(g.id);
+    });
+
+    const sum = document.createElement('summary');
+    const title = document.createElement('span');
+    title.className = 'g-title';
+    title.textContent = `第 ${g.id} 局`;
+    const st = document.createElement('span');
+    st.className = 'status ' + g.status;
+    st.textContent = STATUS_TEXT[g.status];
+    const meta = document.createElement('span');
+    meta.className = 'g-meta';
+    meta.textContent = `${g.guesses.length} 次猜測`;
+    sum.append(title, st, meta);
+
+    const body = document.createElement('div');
+    body.className = 'game-body';
+
+    const times = document.createElement('div');
+    times.className = 'times';
+    const endLabel = g.status === 'won' ? '猜對時間' : '停止作答';
+    times.textContent = `開始時間：${fmtTime(g.startedAt)}　${endLabel}：${g.status === 'playing' ? '尚未結束' : fmtTime(g.endedAt)}`;
+    body.appendChild(times);
+
+    if (g.guesses.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'empty';
+      empty.textContent = '這一局沒有任何猜測紀錄。';
+      body.appendChild(empty);
+    } else {
+      const table = document.createElement('table');
+      table.innerHTML = '<thead><tr><th>次序</th><th>猜測</th><th>結果</th><th>時間</th></tr></thead>';
+      const tbody = document.createElement('tbody');
+      g.guesses.forEach((x) => {
+        const tr = document.createElement('tr');
+        if (x.a === 4) tr.className = 'win';
+        const c1 = document.createElement('td'); c1.textContent = x.n;
+        const c2 = document.createElement('td'); c2.className = 'num'; c2.textContent = x.value;
+        const c3 = document.createElement('td'); c3.className = 'res'; c3.textContent = `${x.a}A${x.b}B`;
+        const c4 = document.createElement('td'); c4.textContent = fmtTime(x.time);
+        tr.append(c1, c2, c3, c4);
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      body.appendChild(table);
+    }
+
+    det.append(sum, body);
+    return det;
+  }
+
+  function renderHistory() {
+    gamesEl.innerHTML = '';
+    // 最新的一局排在最上方
+    for (let i = games.length - 1; i >= 0; i--) {
+      gamesEl.appendChild(buildGameEl(games[i]));
+    }
+    gamesCount.textContent = `共 ${games.length} 局`;
+  }
+
+  function renderAll() {
+    renderCurrent();
+    renderDebug();
+    renderHistory();
+  }
+
+  function startNewGame() {
+    const g = current();
+    // 未猜對的進行中局：標示為未完成並記錄停止時間（即使 0 次猜測也保留）
+    if (g && g.status === 'playing') {
+      g.status = 'abandoned';
+      g.endedAt = new Date();
+    }
+    createGame();
+    debugToggle.checked = false; // 切換到新局時除錯模式恢復關閉
+    input.value = '';
+    showMessage(`第 ${current().id} 局開始了，祝你好運！`, 'info');
+    renderAll();
+    input.focus();
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const g = current();
+    if (g.status !== 'playing') return; // 已猜對的局鎖定
+
+    const value = input.value.trim();
+    const error = validate(value);
+    if (error) {
+      // 無效輸入：只提示，不記錄、不計次
+      showMessage('⚠️ ' + error, 'error');
+      input.focus();
+      input.select();
+      return;
+    }
+
+    const { a, b } = evaluate(value, g.answer);
+    // 重複的猜測也視為獨立的一次操作
+    g.guesses.push({ n: g.guesses.length + 1, value, a, b, time: new Date() });
+    input.value = '';
+
+    if (a === 4) {
+      g.status = 'won';
+      g.endedAt = new Date();
+      showMessage(`🎉 恭喜通關！第 ${g.id} 局共猜了 ${g.guesses.length} 次。可按「開新局」繼續挑戰。`, 'ok');
+    } else {
+      showMessage(`${value} → ${a}A${b}B`, 'info');
+    }
+    renderCurrent();
+    renderHistory();
+    if (g.status === 'playing') input.focus();
+  });
+
+  // 除錯模式：只切換答案顯示，不碰資料
+  debugToggle.addEventListener('change', renderDebug);
+  newGameBtn.addEventListener('click', startNewGame);
+
+  // 初始化第 1 局
+  createGame();
+  showMessage('第 1 局開始了，輸入四個不重複的數字吧！', 'info');
+  renderAll();
+  input.focus();
+})();
+</script>
+</body>
+</html>
