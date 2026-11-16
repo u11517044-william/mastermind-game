@@ -1,67 +1,428 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>幾 A 幾 B 猜數字雲端開發歷程</title>
-  <style>
-    body { font-family: -apple-system, sans-serif; background: #0f172a; color: #f8fafc; padding: 2rem 1rem; margin: 0; }
-    .container { max-width: 900px; margin: 0 auto; text-align: center; }
-    h1 { color: #10b981; margin-bottom: 0.5rem; }
-    p { color: #94a3b8; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem; margin-top: 2rem; text-align: left; }
-    .card { background: #1e293b; border-radius: 12px; padding: 1.5rem; border: 1px solid #334155; display: flex; flex-direction: column; justify-content: space-between; }
-    .tag { background: rgba(16,185,129,0.1); color: #10b981; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.8rem; font-weight: bold; width: fit-content; margin-bottom: 0.5rem; }
-    .btn { display: inline-block; text-align: center; background: #10b981; color: #000; font-weight: bold; padding: 0.6rem; border-radius: 8px; text-decoration: none; margin-top: 1rem; }
-    .btn:hover { background: #059669; color: #fff; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>互動繪本電子書</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container">
-    <h1>🔢 幾 A 幾 B 雲端遊戲開發歷程</h1>
-    <p>展示從靜態區域檔案演進至 Google Apps Script 雲端個人存檔的完整過程</p>
-    
-    <div class="grid">
-      <!-- v1 本機檔 -->
-      <div class="card">
-        <div>
-          <div class="tag">v1 基礎版</div>
-          <h3>單局遊戲與除錯模式</h3>
-          <p style="color:#94a3b8; font-size:0.9rem;">具備基本 4 位數驗證與除錯顯示模式。</p>
-        </div>
-        <a href="my-v1/index.html" class="btn">開啟 v1 (本機)</a>
+
+  <div id="app">
+
+    <!-- 上方：標題與閱讀位置提示 -->
+    <header id="topbar">
+      <h1 class="title">📚 繪本故事</h1>
+      <div id="page-indicator" aria-live="polite">第 1 / 20 頁</div>
+    </header>
+
+    <!-- 中間：繪本舞台（左右為翻頁按鈕） -->
+    <main id="stage">
+      <button id="prev-btn" class="nav-btn nav-left" aria-label="上一頁"><img src="graphics/left.jpg" alt="上一頁"></button>
+
+      <div id="book">
+        <img id="page-image" src="graphics/0.jpg" alt="繪本第 1 頁">
+        <div id="loading-indicator" style="display:none;">載入中...</div>
+        <div id="error-message" style="display:none;">素材載入失敗 <button id="retry-btn">重試</button></div>
       </div>
 
-      <!-- v2 本機檔 -->
-      <div class="card">
-        <div>
-          <div class="tag">v2 多局版</div>
-          <h3>多局歷程與狀態管理</h3>
-          <p style="color:#94a3b8; font-size:0.9rem;">紀錄進行中、已猜對與未完成狀態。</p>
-        </div>
-        <a href="my-v2/index.html" class="btn">開啟 v2 (本機)</a>
-      </div>
+      <button id="next-btn" class="nav-btn nav-right" aria-label="下一頁"><img src="graphics/right.jpg" alt="下一頁"></button>
+    </main>
 
-      <!-- v3 GAS 雲端代號版 -->
-      <div class="card">
-        <div>
-          <div class="tag">v3 代號版</div>
-          <h3>GAS 代號雲端存檔</h3>
-          <p style="color:#94a3b8; font-size:0.9rem;">透過使用者代號自動同步紀錄至 Google 試算表。</p>
-        </div>
-        <a href="https://script.google.com/macros/s/AKfycbxqQEC2lDp9hDdAL8prcaryADfJxnmWBvM5lGuEr4iAbyiWaJGWDmXVqwUKVl0T16cAPg/exec" target="_blank" class="btn">開啟 v3 (雲端)</a>
-      </div>
+    <!-- 進度條 -->
+    <div id="progress"><div id="progress-bar"></div></div>
 
-      <!-- v4 GAS 雲端個人帳號版 -->
-      <div class="card">
-        <div>
-          <div class="tag">v4 帳號版</div>
-          <h3>Google 帳號個人存檔</h3>
-          <p style="color:#94a3b8; font-size:0.9rem;">USER_ACCESSING 自動於玩家個人雲端硬碟建檔。</p>
-        </div>
-        <a href="https://script.google.com/macros/s/AKfycbydT3VNu620UUtQNETZEVRI_IWKteugqlLKta8a3_hpJlQUW1SEr8yuTZM2t9x90gLN/exec" target="_blank" class="btn">開啟 v4 (雲端)</a>
-      </div>
-    </div>
+    <!-- 下方：功能列 -->
+    <footer id="toolbar">
+      <button id="read-btn" class="tool-btn" aria-label="朗讀"><img src="graphics/read.jpg" alt="朗讀"></button>
+      <button id="spirit-btn" class="tool-btn" aria-label="靜音控制"><img src="graphics/spirit.png" alt="精靈"></button>
+      <button id="debug-btn" style="display:none;" aria-label="除錯">Debug</button>
+    </footer>
+
+    <!-- 一般提示訊息與除錯面板 -->
+    <div id="toast" hidden></div>
+    <pre id="debug-panel" hidden></pre>
   </div>
+
+  <!-- 內嵌 JavaScript，避免外部 app.js 讀取失敗問題 -->
+  <script>
+  (() => {
+    'use strict';
+
+    const CONFIG = {
+      firstPage: 0,
+      lastPage: 19,
+      imageDir: 'graphics/',
+      imageExt: 'jpg',
+      speechDir: 'speech/',
+      speechExts: ['mp3', 'wav', 'm4a', 'ogg'],
+      speechName: (page) => `speech${page}`,
+      musicCandidates: [
+        'music/bgm.mp3',
+        'music/music.mp3',
+        'music/background.mp3',
+        'music/bgm.m4a',
+        'music/bgm.ogg',
+        'music/bgm.wav',
+      ],
+      musicVolume: 0.5,
+      musicDuckVolume: 0.15,
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const els = {
+      img: $('page-image'),
+      prev: $('prev-btn'), next: $('next-btn'),
+      read: $('read-btn'), spirit: $('spirit-btn'), debug: $('debug-btn'),
+      indicator: $('page-indicator'), bar: $('progress-bar'), stage: $('stage'),
+      loading: $('loading-indicator'),
+      error: $('error-message'), retry: $('retry-btn'),
+      toast: $('toast'), debugPanel: $('debug-panel'),
+    };
+
+    const state = {
+      page: CONFIG.firstPage,
+      direction: 'fade',
+      reading: false,
+      muted: false,
+      speechToken: 0,
+      speechUrlCache: {},
+      musicUrl: null,
+      musicWasPlayingBeforeHide: false,
+    };
+
+    const music = new Audio();
+    music.loop = true;
+    music.preload = 'auto';
+    music.volume = CONFIG.musicVolume;
+
+    const speechAudio = new Audio();
+    speechAudio.preload = 'auto';
+
+    let toastTimer;
+    function toast(msg, ms = 3000) {
+      els.toast.textContent = msg;
+      els.toast.hidden = false;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => (els.toast.hidden = true), ms);
+    }
+
+    const debugLog = [];
+    function log(msg) {
+      debugLog.push(`${new Date().toLocaleTimeString()}  ${msg}`);
+      if (debugLog.length > 30) debugLog.shift();
+      console.debug('[ebook]', msg);
+    }
+
+    const imageUrl = (page) => `${CONFIG.imageDir}${page}.${CONFIG.imageExt}`;
+    const speechCandidates = (page) =>
+      CONFIG.speechExts.map((ext) => `${CONFIG.speechDir}${CONFIG.speechName(page)}.${ext}`);
+
+    const showLoading = (on) => { els.loading.style.display = on ? 'block' : 'none'; };
+    const showError = (on) => { els.error.style.display = on ? 'block' : 'none'; };
+
+    function updateUI() {
+      const total = CONFIG.lastPage - CONFIG.firstPage + 1;
+      const current = state.page - CONFIG.firstPage + 1;
+      els.indicator.textContent = `第 ${current} / ${total} 頁`;
+      els.bar.style.width = `${(current / total) * 100}%`;
+      els.prev.disabled = state.page <= CONFIG.firstPage;
+      els.next.disabled = state.page >= CONFIG.lastPage;
+    }
+
+    function handleImageLoad() {
+      showLoading(false);
+      showError(false);
+      els.img.style.visibility = 'visible';
+      els.img.classList.remove('enter-next', 'enter-prev', 'enter-fade');
+      void els.img.offsetWidth;
+      els.img.classList.add(`enter-${state.direction}`);
+    }
+
+    function handleImageError() {
+      showLoading(false);
+      showError(true);
+      els.img.style.visibility = 'hidden';
+      log(`圖片載入失敗：${els.img.getAttribute('src')}`);
+    }
+
+    function showPage(page, direction = 'fade') {
+      page = Math.max(CONFIG.firstPage, Math.min(CONFIG.lastPage, page));
+      state.page = page;
+      state.direction = direction;
+
+      stopSpeech();
+      updateUI();
+
+      showLoading(true);
+      showError(false);
+      els.img.style.visibility = 'visible';
+      els.img.alt = `繪本第 ${page + 1} 頁`;
+      els.img.src = imageUrl(page);
+
+      preloadNext(page);
+    }
+
+    const goNext = () => { if (state.page < CONFIG.lastPage) showPage(state.page + 1, 'next'); };
+    const goPrev = () => { if (state.page > CONFIG.firstPage) showPage(state.page - 1, 'prev'); };
+
+    const preloadedImages = {};
+    const preloadedAudio = {};
+
+    function probeSpeech(page) {
+      const a = new Audio();
+      a.preload = 'auto';
+      const urls = speechCandidates(page);
+      let i = 0;
+      const tryNext = () => {
+        if (i >= urls.length) { a.oncanplay = a.onerror = null; return; }
+        a.src = urls[i];
+        a.load();
+      };
+      a.oncanplay = () => {
+        state.speechUrlCache[page] = urls[i];
+        a.oncanplay = a.onerror = null;
+      };
+      a.onerror = () => { i += 1; tryNext(); };
+      tryNext();
+      return a;
+    }
+
+    function preloadNext(page) {
+      const n = page + 1;
+      if (n > CONFIG.lastPage) return;
+      if (!preloadedImages[n]) {
+        const im = new Image();
+        im.src = imageUrl(n);
+        preloadedImages[n] = im;
+      }
+      if (!preloadedAudio[n]) preloadedAudio[n] = probeSpeech(n);
+    }
+
+    const duck = () => { music.volume = CONFIG.musicDuckVolume; };
+    const unduck = () => { music.volume = CONFIG.musicVolume; };
+
+    function setReading(on) {
+      state.reading = on;
+      els.read.classList.toggle('reading', on);
+      if (on) duck(); else unduck();
+    }
+
+    function stopSpeech() {
+      state.speechToken += 1;
+      speechAudio.pause();
+      try { speechAudio.currentTime = 0; } catch (e) {}
+      setReading(false);
+      return state.speechToken;
+    }
+
+    speechAudio.onended = () => setReading(false);
+    speechAudio.onplaying = () => { state.reading = true; els.read.classList.add('reading'); duck(); };
+
+    async function readCurrentPage() {
+      const token = stopSpeech();
+      const page = state.page;
+      const cached = state.speechUrlCache[page];
+      const urls = cached ? [cached] : speechCandidates(page);
+
+      for (const url of urls) {
+        if (token !== state.speechToken) return;
+        speechAudio.src = url;
+        try {
+          await speechAudio.play();
+          if (token !== state.speechToken) return;
+          state.speechUrlCache[page] = url;
+          setReading(true);
+          return;
+        } catch (err) {
+          if (token !== state.speechToken) return;
+          if (err && err.name === 'NotAllowedError') {
+            toast('瀏覽器擋住了播放，請再點一次朗讀');
+            return;
+          }
+        }
+      }
+      toast(`第 ${page + 1} 頁找不到語音檔 🔇（請檢查 speech/ 資料夾）`);
+    }
+
+    let musicLoading = null;
+    function startMusic() {
+      if (musicLoading) return musicLoading;
+      musicLoading = (async () => {
+        const urls = state.musicUrl ? [state.musicUrl] : CONFIG.musicCandidates;
+        for (const url of urls) {
+          music.src = url;
+          try {
+            await music.play();
+            state.musicUrl = url;
+            return 'playing';
+          } catch (err) {
+            if (err && err.name === 'NotAllowedError') return 'blocked';
+          }
+        }
+        return 'missing';
+      })().finally(() => { musicLoading = null; });
+      return musicLoading;
+    }
+
+    async function toggleMusicPlayback() {
+      if (music.paused) {
+        const r = await startMusic();
+        if (r === 'missing') toast('找不到背景音樂 🎵（請檢查 music/ 資料夾）', 4000);
+      } else {
+        music.pause();
+      }
+    }
+
+    function setMuted(m) {
+      state.muted = m;
+      music.muted = m;
+      els.spirit.classList.toggle('is-muted', m);
+      els.spirit.setAttribute('aria-pressed', String(m));
+      els.spirit.title = m ? '解除靜音' : '靜音';
+    }
+
+    function onSpiritClick() {
+      setMuted(!state.muted);
+      els.spirit.classList.remove('wiggle');
+      void els.spirit.offsetWidth;
+      els.spirit.classList.add('wiggle');
+    }
+
+    function initMusicAutoplay() {
+      const events = ['pointerdown', 'touchend', 'keydown'];
+      const unlock = async (e) => {
+        if (e.type === 'keydown' && (e.key === ' ' || e.code === 'Space')) return;
+        const r = await startMusic();
+        if (r === 'playing') {
+          events.forEach((t) => document.removeEventListener(t, unlock, true));
+        } else if (r === 'missing') {
+          events.forEach((t) => document.removeEventListener(t, unlock, true));
+          toast('找不到背景音樂 🎵（請檢查 music/ 資料夾）', 4000);
+        }
+      };
+
+      startMusic().then((r) => {
+        if (r === 'blocked') {
+          events.forEach((t) => document.addEventListener(t, unlock, true));
+        } else if (r === 'missing') {
+          toast('找不到背景音樂 🎵（請檢查 music/ 資料夾）', 4000);
+        }
+      });
+    }
+
+    function snapshot() {
+      return {
+        page: state.page,
+        indicator: els.indicator.textContent,
+        imageSrc: els.img.getAttribute('src'),
+        prevDisabled: els.prev.disabled,
+        nextDisabled: els.next.disabled,
+        music: {
+          src: music.getAttribute('src'), paused: music.paused, muted: music.muted,
+          volume: music.volume, currentTime: Number(music.currentTime.toFixed(1)),
+        },
+        speech: {
+          src: speechAudio.getAttribute('src'), paused: speechAudio.paused,
+          currentTime: Number(speechAudio.currentTime.toFixed(1)), reading: state.reading,
+        },
+        speechUrlCache: state.speechUrlCache,
+        recentLog: debugLog.slice(-10),
+      };
+    }
+
+    let debugTimer = null;
+    function renderDebug() { els.debugPanel.textContent = JSON.stringify(snapshot(), null, 2); }
+
+    function toggleDebugPanel() {
+      const show = els.debugPanel.hidden;
+      els.debugPanel.hidden = !show;
+      clearInterval(debugTimer);
+      if (show) { renderDebug(); debugTimer = setInterval(renderDebug, 500); }
+    }
+
+    function toggleDebugButton(forceShow) {
+      const show = typeof forceShow === 'boolean' ? forceShow : els.debug.style.display === 'none';
+      els.debug.style.display = show ? '' : 'none';
+      if (!show) { els.debugPanel.hidden = true; clearInterval(debugTimer); }
+    }
+
+    window.ebookDebug = { getState: snapshot, goTo: (p) => showPage(p, 'fade') };
+
+    function bindEvents() {
+      els.prev.addEventListener('click', goPrev);
+      els.next.addEventListener('click', goNext);
+      els.read.addEventListener('click', readCurrentPage);
+      els.spirit.addEventListener('click', onSpiritClick);
+      els.debug.addEventListener('click', toggleDebugPanel);
+
+      els.img.addEventListener('load', handleImageLoad);
+      els.img.addEventListener('error', handleImageError);
+
+      els.retry.addEventListener('click', () => {
+        state.speechUrlCache = {};
+        Object.keys(preloadedAudio).forEach((k) => delete preloadedAudio[k]);
+        Object.keys(preloadedImages).forEach((k) => delete preloadedImages[k]);
+        showError(false);
+        showLoading(true);
+        els.img.style.visibility = 'visible';
+        els.img.src = `${imageUrl(state.page)}?retry=${Date.now()}`;
+        preloadNext(state.page);
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
+        if (e.key === 'ArrowLeft') { e.preventDefault(); goPrev(); }
+        else if (e.key === 'ArrowRight') { e.preventDefault(); goNext(); }
+        else if (e.key === ' ' || e.code === 'Space') {
+          e.preventDefault();
+          if (!e.repeat) toggleMusicPlayback();
+        } else if (e.key === 'd' || e.key === 'D') {
+          toggleDebugButton();
+        }
+      });
+      document.addEventListener('keyup', (e) => {
+        if (e.key === ' ' || e.code === 'Space') e.preventDefault();
+      });
+
+      let startX = 0, startY = 0;
+      els.stage.addEventListener('touchstart', (e) => {
+        startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+      }, { passive: true });
+      els.stage.addEventListener('touchend', (e) => {
+        const dx = e.changedTouches[0].clientX - startX;
+        const dy = e.changedTouches[0].clientY - startY;
+        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) (dx < 0 ? goNext : goPrev)();
+      }, { passive: true });
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          state.musicWasPlayingBeforeHide = !music.paused;
+          music.pause();
+        } else if (state.musicWasPlayingBeforeHide) {
+          music.play().catch(() => {});
+        }
+      });
+    }
+
+    function init() {
+      bindEvents();
+      updateUI();
+      setMuted(false);
+
+      if (els.img.complete) {
+        if (els.img.naturalWidth > 0) handleImageLoad(); else handleImageError();
+      } else {
+        showLoading(true);
+      }
+
+      preloadNext(state.page);
+      initMusicAutoplay();
+      if (/[?&]debug\b/.test(location.search)) toggleDebugButton(true);
+    }
+
+    init();
+  })();
+  </script>
 </body>
 </html>
